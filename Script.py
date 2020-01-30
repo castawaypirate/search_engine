@@ -1,6 +1,6 @@
-import string
 import numpy
 import sys
+import pickle
 
 
 def bubble_sort(A, B, C):
@@ -29,7 +29,8 @@ class Indexer:
         signs = "?!@#$%^&*()-_=+"
         for char in signs:
             clean_text = clean_text.replace(char, "")
-        clean_text = clean_text.replace("  ", " ")
+        while "  " in clean_text:
+            clean_text = clean_text.replace("  ", " ")
         clean_text = clean_text.replace('"', "")
         clean_text = clean_text.replace("'", "")
 
@@ -44,6 +45,8 @@ class Indexer:
             self.pages.update({url: (title, len(terms))})
 
             for term in terms:
+                if term == "":
+                    continue
                 if term[len(term) - 1] == '.':
                     term = term[:-1]
                 if self.dictionary.keys().__contains__(term.lower()):
@@ -92,18 +95,26 @@ class Indexer:
         bubble_sort(scores, urls, titles)
         for i in range(k):
             try:
-                print("Page " + str(i+1) + ": " + titles[i] + " - " + urls[i])
+                print("<p> Page " + str(i+1) + ": " + titles[i] + " - " + urls[i] + "</p>")
 
             except IndexError:
-                print("No more results..")
+                print("<p> No more results.. </p>")
                 break
 
-#paradeigmataki
+    def load_indexer(self):
+        try:
+            with open('indexer.pkl', 'rb') as input:
 
-i = Indexer()
-i.update("MALAKAS","www.malakas.gr", "When I was a young boy, my father took me into the city, to see a marching band!")
-i.update("MALAKAS2", "www.malakas2.gr", "He said 'son, when you grow up, would you be the saviour of the broken, the beaten and the damned'")
-i.top_k(int(sys.argv[1]), sys.argv[2])
+                return pickle.load(input)
+        except(FileNotFoundError):
+            print("Indexer is empty , run myCrawler")
+            return None
+
+if __name__ == '__main__':
+    indexer = Indexer().load_indexer()
+    indexer.top_k(int(sys.argv[1]), sys.argv[2])
+
+
 
 
 

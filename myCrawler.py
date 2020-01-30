@@ -7,6 +7,8 @@ from multiprocessing.dummy import Pool  # This is a thread-based Pool
 from multiprocessing import cpu_count
 from collections import deque
 import time
+import Script
+import pickle
 
 
 def tag_visible(element):
@@ -21,10 +23,12 @@ def worker(url):
     texts = workersoup.findAll(text=True)
     visible_texts = filter(tag_visible, texts)
     final = u" ".join(t.strip() for t in visible_texts)
+
     tag = workersoup.find('title')
     for x in tag:
         title=(str(x))
     l.append(title)
+    indexer.update(title,url,final)
 
 if __name__ == "__main__":
     start_time = time.time()
@@ -61,6 +65,11 @@ if __name__ == "__main__":
     dq = deque([[startingPage, "", 0]])
     count=0
     l=[]
+    if keep == 0:
+        indexer = Script.Indexer()
+    else:
+        with open('indexer.pkl' , 'rb') as input:
+            indexer = pickle.load(input)
     while dq:
         base, path, depth = dq.popleft()
         #                         ^^^^ removing "left" makes this a DFS (stack)
@@ -83,11 +92,16 @@ if __name__ == "__main__":
 
         except:
             pass
+    with open('indexer.pkl' , 'wb') as output:
+        pickle.dump(indexer,output,pickle.HIGHEST_PROTOCOL)
 
 
-
-    time.sleep(5)
-    print(len(l))
+'''
+   time.sleep(5)
+   print(len(l))
     for item in l:
         print(item)
     print("--- %s seconds ---" % (time.time() - start_time))
+'''
+
+
