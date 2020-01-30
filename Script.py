@@ -1,5 +1,6 @@
 import string
 import numpy
+import sys
 
 
 def bubble_sort(A, B, C):
@@ -92,6 +93,7 @@ class Indexer:
         for i in range(k):
             try:
                 print("Page " + str(i+1) + ": " + titles[i] + " - " + urls[i])
+
             except IndexError:
                 print("No more results..")
                 break
@@ -101,7 +103,7 @@ class Indexer:
 i = Indexer()
 i.update("MALAKAS","www.malakas.gr", "When I was a young boy, my father took me into the city, to see a marching band!")
 i.update("MALAKAS2", "www.malakas2.gr", "He said 'son, when you grow up, would you be the saviour of the broken, the beaten and the damned'")
-i.top_k(2, "when you grow up")
+i.top_k(int(sys.argv[1]), sys.argv[2])
 
 
 
