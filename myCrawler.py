@@ -26,45 +26,49 @@ def worker(soup):
     l.append(final)
 
 if __name__ == "__main__":
-    # numOfParameters = len(sys.argv)
-    # if(numOfParameters<4):
-    #     print("Parameters Error")
-    #     sys.exit()
-    #
-    # parametersList=[]
-    # for i in range (1, numOfParameters):
-    #     parametersList.append(sys.argv[i])
-    #
-    # # starting page
-    # startingPage = parametersList[0]
-    #
-    # # number of pages to crawl
-    # pagesToCrawl = int(parametersList[1])
-    #
-    # # 0 doesnt keep data from previous crawl, 1 keeps it
-    # keep = int(parametersList[2])
-    #
-    # # number of threads
-    # if(len(parametersList)>3):
-    #     numOfThreads = int(parametersList[3])
-    #
     start_time = time.time()
 
-    pool = Pool(cpu_count() * 10)
-    visited = set(["http://toscrape.com"])
-    dq = deque([["http://toscrape.com", "", 0]])
-    max_depth = 1
+    numOfParameters = len(sys.argv)
+    if(numOfParameters==1):
+        startingPage="http://toscrape.com"
+        pagesToCrawl=50
+        keep=0
+        numOfThreads=8
+    else:
+        parametersList = []
+        for i in range(1, numOfParameters):
+            parametersList.append(sys.argv[i])
+
+        # starting page
+        startingPage = parametersList[0]
+
+        # number of pages to crawl
+        pagesToCrawl = int(parametersList[1])
+
+        # 0 doesnt keep data from previous crawl, 1 keeps it
+        keep = int(parametersList[2])
+
+        # number of threads
+        if (len(parametersList) > 3):
+            numOfThreads = int(parametersList[3])
+        else:
+            numOfThreads=1
+
+
+    pool = Pool(cpu_count() * numOfThreads)
+    visited = set([startingPage])
+    dq = deque([[startingPage, "", 0]])
+    count=0
     l=[]
     while dq:
         base, path, depth = dq.popleft()
         #                         ^^^^ removing "left" makes this a DFS (stack)
-        if depth < max_depth:
-            try:
-                soup = BeautifulSoup(requests.get(base + path).text, "html.parser")
-
-                for link in soup.find_all("a"):
-                    href = link.get("href")
-                    if href not in visited:
+        try:
+            soup = BeautifulSoup(requests.get(base + path).text, "html.parser")
+            for link in soup.find_all("a"):
+                href = link.get("href")
+                if href not in visited:
+                    if count < pagesToCrawl:
                         visited.add(href)
                         print("  " * depth + f"at depth {depth}: {href}")
                         results = pool.imap(worker,(soup,))
@@ -72,11 +76,16 @@ if __name__ == "__main__":
                             dq.append([href, "", depth + 1])
                         else:
                             dq.append([base, href, depth + 1])
+                        count=count+1
+                    else:
+                        break
+
+        except:
+            pass
 
 
-            except:
-                pass
 
+    time.sleep(2)
     for item in l:
         print(item)
     print("--- %s seconds ---" % (time.time() - start_time))
