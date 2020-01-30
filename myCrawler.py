@@ -3,16 +3,10 @@ import requests
 from bs4 import BeautifulSoup
 from bs4.element import Comment
 from urllib.parse import urlparse
-from multiprocessing.pool import ThreadPool as Pool
-
-
-# define worker function before a Pool is instantiated
-def worker(item):
-    try:
-        print(item)
-    except:
-        print('error with item')
-
+from multiprocessing.dummy import Pool  # This is a thread-based Pool
+from multiprocessing import cpu_count
+from collections import deque
+import time
 
 
 def tag_visible(element):
@@ -22,51 +16,67 @@ def tag_visible(element):
         return False
     return True
 
-
-if __name__ == "__main__":
-    numOfParameters = len(sys.argv)
-    if(numOfParameters<4):
-        print("Parameters Error")
-        sys.exit()
-
-    parametersList=[]
-    for i in range (1, numOfParameters):
-        parametersList.append(sys.argv[i])
-
-    # starting page
-    startingPage = requests.get(parametersList[0])
-    # number of pages to crawl
-    pagesToCrawl = int(parametersList[1])
-    # 0 doesnt keep data from previous crawl, 1 keeps it
-    keep = int(parametersList[2])
-    # number of threads
-    if(len(parametersList)>3):
-        numOfThreads = int(parametersList[3])
-
-    pool = Pool(numOfThreads)
-
-
-    soup = BeautifulSoup(startingPage.content, 'html.parser')
+def worker(soup):
     texts = soup.findAll(text=True)
     visible_texts = filter(tag_visible, texts)
-    links = [a.get('href') for a in soup.find_all('a', href=True)]
-
-    for item in links:
-        pool.apply_async(worker, (item,))
-
-    pool.close()
-    pool.join()
-
-    # parsed_uri = urlparse(parametersList[0])
-    # result = '{uri.scheme}://{uri.netloc}/'.format(uri=parsed_uri)
-    # print(result)
-
-    # for l in links:
-    #     print(l)
     final = u" ".join(t.strip() for t in visible_texts)
-    # print(final)
-    # print(type(final))
-    # a = int(sys.argv[1])
-    # b = int(sys.argv[2])
-    # print(a)
-    # print(b)
+    tag = soup.find('title')
+    for x in tag:
+        title=(str(x))
+    l.append(final)
+
+if __name__ == "__main__":
+    # numOfParameters = len(sys.argv)
+    # if(numOfParameters<4):
+    #     print("Parameters Error")
+    #     sys.exit()
+    #
+    # parametersList=[]
+    # for i in range (1, numOfParameters):
+    #     parametersList.append(sys.argv[i])
+    #
+    # # starting page
+    # startingPage = parametersList[0]
+    #
+    # # number of pages to crawl
+    # pagesToCrawl = int(parametersList[1])
+    #
+    # # 0 doesnt keep data from previous crawl, 1 keeps it
+    # keep = int(parametersList[2])
+    #
+    # # number of threads
+    # if(len(parametersList)>3):
+    #     numOfThreads = int(parametersList[3])
+    #
+    start_time = time.time()
+
+    pool = Pool(cpu_count() * 10)
+    visited = set(["http://toscrape.com"])
+    dq = deque([["http://toscrape.com", "", 0]])
+    max_depth = 1
+    l=[]
+    while dq:
+        base, path, depth = dq.popleft()
+        #                         ^^^^ removing "left" makes this a DFS (stack)
+        if depth < max_depth:
+            try:
+                soup = BeautifulSoup(requests.get(base + path).text, "html.parser")
+
+                for link in soup.find_all("a"):
+                    href = link.get("href")
+                    if href not in visited:
+                        visited.add(href)
+                        print("  " * depth + f"at depth {depth}: {href}")
+                        results = pool.imap(worker,(soup,))
+                        if href.startswith("http"):
+                            dq.append([href, "", depth + 1])
+                        else:
+                            dq.append([base, href, depth + 1])
+
+
+            except:
+                pass
+
+    for item in l:
+        print(item)
+    print("--- %s seconds ---" % (time.time() - start_time))
