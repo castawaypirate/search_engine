@@ -16,21 +16,22 @@ def tag_visible(element):
         return False
     return True
 
-def worker(soup):
-    texts = soup.findAll(text=True)
+def worker(url):
+    workersoup = BeautifulSoup(requests.get(url).text, "html.parser")
+    texts = workersoup.findAll(text=True)
     visible_texts = filter(tag_visible, texts)
     final = u" ".join(t.strip() for t in visible_texts)
-    tag = soup.find('title')
+    tag = workersoup.find('title')
     for x in tag:
         title=(str(x))
-    l.append(final)
+    l.append(title)
 
 if __name__ == "__main__":
     start_time = time.time()
 
     numOfParameters = len(sys.argv)
     if(numOfParameters==1):
-        startingPage="http://toscrape.com"
+        startingPage="https://www.insomnia.gr/"
         pagesToCrawl=50
         keep=0
         numOfThreads=8
@@ -71,7 +72,7 @@ if __name__ == "__main__":
                     if count < pagesToCrawl:
                         visited.add(href)
                         print("  " * depth + f"at depth {depth}: {href}")
-                        results = pool.imap(worker,(soup,))
+                        results = pool.imap(worker,(href,))
                         if href.startswith("http"):
                             dq.append([href, "", depth + 1])
                         else:
@@ -85,7 +86,8 @@ if __name__ == "__main__":
 
 
 
-    time.sleep(2)
+    time.sleep(5)
+    print(len(l))
     for item in l:
         print(item)
     print("--- %s seconds ---" % (time.time() - start_time))
