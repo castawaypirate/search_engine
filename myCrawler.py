@@ -66,7 +66,10 @@ if __name__ == "__main__":
     # pool of threads
     pool = Pool(cpu_count() * numOfThreads)
 
+    # set of visited links
     visited = set([startingPage])
+
+    # deque of links
     dq = deque([[startingPage, "", 0]])
     count=0
 
