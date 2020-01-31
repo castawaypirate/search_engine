@@ -3,14 +3,14 @@ import requests
 from bs4 import BeautifulSoup
 from bs4.element import Comment
 from urllib.parse import urlparse
-from multiprocessing.dummy import Pool  # This is a thread-based Pool
+from multiprocessing.dummy import Pool
 from multiprocessing import cpu_count
 from collections import deque
 import time
 import Script
 import pickle
 
-
+# finds tags of visible text inside the html
 def tag_visible(element):
     if element.parent.name in ['style', 'script', 'head', 'title', 'meta', '[document]']:
         return False
@@ -18,22 +18,24 @@ def tag_visible(element):
         return False
     return True
 
+# filters text from tags and finds title of url
 def worker(url):
     workersoup = BeautifulSoup(requests.get(url).text, "html.parser")
     texts = workersoup.findAll(text=True)
     visible_texts = filter(tag_visible, texts)
     final = u" ".join(t.strip() for t in visible_texts)
-
     tag = workersoup.find('title')
     for x in tag:
         title=(str(x))
-    l.append(title)
-    indexer.update(title,url,final)
+    indexer.update(title, url, final)
 
+# main
 if __name__ == "__main__":
+    # execution time
     start_time = time.time()
-
     numOfParameters = len(sys.argv)
+
+    # initialize paramameters
     if(numOfParameters==1):
         startingPage="https://www.insomnia.gr/"
         pagesToCrawl=50
@@ -41,6 +43,7 @@ if __name__ == "__main__":
         numOfThreads=8
     else:
         parametersList = []
+        # initialize command line parameters
         for i in range(1, numOfParameters):
             parametersList.append(sys.argv[i])
 
@@ -60,11 +63,13 @@ if __name__ == "__main__":
             numOfThreads=1
 
 
+    # pool of threads
     pool = Pool(cpu_count() * numOfThreads)
+
     visited = set([startingPage])
     dq = deque([[startingPage, "", 0]])
     count=0
-    l=[]
+
     if keep == 0:
         indexer = Script.Indexer()
     else:
@@ -72,7 +77,6 @@ if __name__ == "__main__":
             indexer = pickle.load(input)
     while dq:
         base, path, depth = dq.popleft()
-        #                         ^^^^ removing "left" makes this a DFS (stack)
         try:
             soup = BeautifulSoup(requests.get(base + path).text, "html.parser")
             for link in soup.find_all("a"):
@@ -80,7 +84,9 @@ if __name__ == "__main__":
                 if href not in visited:
                     if count < pagesToCrawl:
                         visited.add(href)
-                        print("  " * depth + f"at depth {depth}: {href}")
+                        # print("  " * depth + f"at depth {depth}: {href}")
+
+                        #assigns worker function to thread
                         results = pool.imap(worker,(href,))
                         if href.startswith("http"):
                             dq.append([href, "", depth + 1])
@@ -96,12 +102,5 @@ if __name__ == "__main__":
         pickle.dump(indexer,output,pickle.HIGHEST_PROTOCOL)
 
 
-'''
-   time.sleep(5)
-   print(len(l))
-    for item in l:
-        print(item)
-    print("--- %s seconds ---" % (time.time() - start_time))
-'''
-
-
+    # prints execution time
+    # print("--- %s seconds ---" % (time.time() - start_time))
