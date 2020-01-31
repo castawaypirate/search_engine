@@ -23,6 +23,7 @@ class Indexer:
         self.dictionary = dict()
         self.pages = dict()
 
+    #Method that cleans a string (removes signs that are irrelevant and keeps only the words)
     def get_clean_terms(self, text):
         clean_text = text.replace(". ", " ")
         clean_text = clean_text.replace(", ", " ")
@@ -37,6 +38,8 @@ class Indexer:
         terms = clean_text.split(" ")
         return terms
 
+
+    # Method that updates the Indexer with the terms of a new page (url , title)
     def update(self, title, url, text):
         if self.pages.keys().__contains__(url):
             print("Page: " + url + " is already indexed")
@@ -62,6 +65,7 @@ class Indexer:
                 else:
                     self.dictionary.update({term.lower(): [(url, 1)]})
 
+    # Method that calculates the similarity and print the appropriate values
     def top_k(self, k, q):
         N = len(self.pages.keys())
         S = dict()
@@ -95,7 +99,7 @@ class Indexer:
         bubble_sort(scores, urls, titles)
         for i in range(k):
             try:
-                print("<p> Page " + str(i+1) + ": " + titles[i] + " - " + urls[i] + "</p>")
+                print("<p> Page " + str(i+1) + ": " + titles[i] + " - " + '<a href="' + urls[i] +'">' + urls[i] + '</a>' + "</p>")
 
             except IndexError:
                 print("<p> No more results.. </p>")
@@ -107,12 +111,16 @@ class Indexer:
 
                 return pickle.load(input)
         except(FileNotFoundError):
-            print("Indexer is empty , run myCrawler")
+            print("Indexer is empty , run myCrawler..")
             return None
+
 
 if __name__ == '__main__':
     indexer = Indexer().load_indexer()
-    indexer.top_k(int(sys.argv[1]), sys.argv[2])
+    if indexer is None:
+        pass
+    else:
+        indexer.top_k(int(sys.argv[1]), sys.argv[2])
 
 
 
